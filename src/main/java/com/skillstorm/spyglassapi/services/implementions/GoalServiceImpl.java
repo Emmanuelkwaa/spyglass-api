@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -18,5 +19,10 @@ public class GoalServiceImpl extends GenericRepositoryImpl<Goal, Long> implement
     public GoalServiceImpl(GoalRepository goalRepository) {
         super(goalRepository);
         this.goalRepository = goalRepository;
+    }
+
+    @Override
+    public Optional<Goal> findByName(String name) {
+        return goalRepository.findGoalByName(name);
     }
 }
