@@ -1,6 +1,6 @@
 package com.skillstorm.spyglassapi.services.interfaces;
 
-import com.skillstorm.spyglassapi.models.Goal;
+import com.skillstorm.spyglassapi.models.dbSet.Goal;
 
 import java.util.Optional;
 

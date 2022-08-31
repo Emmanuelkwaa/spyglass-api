@@ -1,7 +1,7 @@
 package com.skillstorm.spyglassapi.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.skillstorm.spyglassapi.models.Goal;
+import com.skillstorm.spyglassapi.models.dbSet.Goal;
 import com.skillstorm.spyglassapi.models.dtos.errors.Error;
 import com.skillstorm.spyglassapi.models.dtos.incoming.GoalRequestDto;
 import com.skillstorm.spyglassapi.models.generic.Result;

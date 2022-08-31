@@ -1,4 +1,4 @@
-package com.skillstorm.spyglassapi.models;
+package com.skillstorm.spyglassapi.models.dbSet;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -43,4 +43,14 @@ public class Goal{
     @Column(name = "target_amount")
     @NotNull
     private double targetAmount;
+
+    @NotNull
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    @NotNull
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    private Category category;
 }
