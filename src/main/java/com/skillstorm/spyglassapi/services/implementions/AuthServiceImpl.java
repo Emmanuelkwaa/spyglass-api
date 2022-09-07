@@ -1,6 +1,5 @@
 package com.skillstorm.spyglassapi.services.implementions;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skillstorm.spyglassapi.STATIC_DETAILS.SD;
@@ -11,13 +10,17 @@ import com.skillstorm.spyglassapi.data.repositories.AuthRepository;
 import com.skillstorm.spyglassapi.models.dbSet.Role;
 import com.skillstorm.spyglassapi.models.dbSet.User;
 import com.skillstorm.spyglassapi.models.dtos.errors.Error;
+import com.skillstorm.spyglassapi.models.dtos.incoming.LoginRequestDto;
 import com.skillstorm.spyglassapi.models.dtos.incoming.UserRequestDto;
 import com.skillstorm.spyglassapi.models.dtos.outgoing.AuthResult;
 import com.skillstorm.spyglassapi.models.dtos.outgoing.UserResponseDto;
 import com.skillstorm.spyglassapi.models.generic.TokenData;
 import com.skillstorm.spyglassapi.services.interfaces.AuthService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -33,14 +36,19 @@ public class AuthServiceImpl extends GenericRepositoryImpl<User, Long> implement
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final AuthenticationManager authenticationManager;
 
-    @Autowired
-    public AuthServiceImpl(AuthRepository authRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+    public AuthServiceImpl(
+            AuthRepository authRepository,
+            RoleRepository roleRepository,
+            PasswordEncoder passwordEncoder,
+            JwtUtil jwtUtil, AuthenticationManager authenticationManager) {
         super(authRepository);
         this.authRepository = authRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+        this.authenticationManager = authenticationManager;
     }
 
     @Override
@@ -78,6 +86,36 @@ public class AuthServiceImpl extends GenericRepositoryImpl<User, Long> implement
         return authResult;
     }
 
+    @Override
+    public AuthResult authenticate(LoginRequestDto loginRequestDto) throws Exception {
+        ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        AuthResult authResult = new AuthResult();
+
+        User existingUser = authRepository.findUserByEmail(loginRequestDto.getEmail());
+        if (existingUser == null) {
+            authResult.setError(new Error(400, HttpStatus.BAD_REQUEST, "Invalid login request!"));
+            authResult.setSuccess(false);
+            return authResult;
+        }
+
+        String email = loginRequestDto.getEmail();
+        String password = loginRequestDto.getPassword();
+
+        //authenticate login info
+        authenticate(email, password);
+        //UserDetails userDetails = loadUserByUsername(email);
+        TokenData tokens = getTokens(existingUser);
+
+        UserResponseDto userResponseDto = mapper.convertValue(existingUser, UserResponseDto.class);
+
+        authResult.setUser(userResponseDto);
+        authResult.setTokenData(tokens);
+
+        return authResult;
+    }
+
+
+
     private TokenData getTokens(User user) {
         org.springframework.security.core.userdetails.User
                 springUser = new org.springframework.security.core.userdetails.User(
@@ -99,5 +137,15 @@ public class AuthServiceImpl extends GenericRepositoryImpl<User, Long> implement
             authorities.add(new SimpleGrantedAuthority(role.getName()));
         });
         return authorities;
+    }
+
+    private void authenticate(String userName, String userPassword) throws Exception {
+        try {
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userName, userPassword));
+        } catch (DisabledException e) {
+            throw new Exception("USER_DISABLED", e);
+        } catch (BadCredentialsException e) {
+            throw new Exception("INVALID_CREDENTIALS", e);
+        }
     }
 }

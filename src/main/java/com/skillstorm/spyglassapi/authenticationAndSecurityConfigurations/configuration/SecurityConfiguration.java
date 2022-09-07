@@ -35,7 +35,7 @@ public class SecurityConfiguration {
         jwtAuthenticationFilter.setFilterProcessesUrl("/api/v1/login");
         http.csrf().disable();
         http.sessionManagement().sessionCreationPolicy(STATELESS);
-        http.authorizeRequests().antMatchers("/api/v1/login/**", "/api/v1/auth/register/**", "/api/v1/refreshToken/**").permitAll();
+        http.authorizeRequests().antMatchers("/api/v1/auth/login/**", "/api/v1/auth/register/**", "/api/v1/refreshToken/**").permitAll();
         http.authorizeRequests().antMatchers(GET, "/api/user/**").hasAnyAuthority(SD.Role_User);
         http.authorizeRequests().antMatchers(POST, "/api/user/save/**").hasAnyAuthority(SD.Role_Admin);
         http.authorizeRequests().anyRequest().authenticated();

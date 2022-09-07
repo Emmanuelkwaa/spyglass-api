@@ -1,9 +1,8 @@
 package com.skillstorm.spyglassapi.controllers;
 
-import com.skillstorm.spyglassapi.models.dbSet.Role;
+import com.skillstorm.spyglassapi.models.dtos.incoming.LoginRequestDto;
 import com.skillstorm.spyglassapi.models.dtos.incoming.UserRequestDto;
 import com.skillstorm.spyglassapi.models.dtos.outgoing.AuthResult;
-import com.skillstorm.spyglassapi.models.generic.Result;
 import com.skillstorm.spyglassapi.unitOfWork.IUnitOfWork;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +12,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 
-import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
 @RestController
@@ -31,6 +29,16 @@ public class AuthController {
         AuthResult authResult = unitOfWork.auth().saveUser(userRequestDto);
         if(authResult.isSuccess()) {
             return new ResponseEntity<>(authResult, HttpStatus.CREATED);
+        }
+
+        return new ResponseEntity<>(authResult, HttpStatus.BAD_REQUEST);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<AuthResult> login(@Valid @RequestBody LoginRequestDto loginRequestDto) throws Exception {
+        AuthResult authResult = unitOfWork.auth().authenticate(loginRequestDto);
+        if (authResult.isSuccess()){
+            return new ResponseEntity<>(authResult, HttpStatus.OK);
         }
 
         return new ResponseEntity<>(authResult, HttpStatus.BAD_REQUEST);

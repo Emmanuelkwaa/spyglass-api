@@ -11,6 +11,7 @@ import com.skillstorm.spyglassapi.services.interfaces.AuthService;
 import com.skillstorm.spyglassapi.services.interfaces.GoalService;
 import com.skillstorm.spyglassapi.services.interfaces.RoleService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -21,18 +22,23 @@ public class UnitOfWork implements IUnitOfWork{
     private final AuthService authService;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final AuthenticationManager authenticationManager;
 
     @Autowired
     public UnitOfWork(
-            GoalRepository goalRepository,
-            RoleRepository roleRepository,
-            AuthRepository authRepository,
-            PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+        GoalRepository goalRepository,
+        RoleRepository roleRepository,
+        AuthRepository authRepository,
+        PasswordEncoder passwordEncoder,
+        JwtUtil jwtUtil,
+        AuthenticationManager authenticationManager
+    ) {
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.goalService = new GoalServiceImpl(goalRepository);
         this.roleService = new RoleServiceImpl(roleRepository);
-        this.authService = new AuthServiceImpl(authRepository, roleRepository, this.passwordEncoder, this.jwtUtil);
+        this.authenticationManager = authenticationManager;
+        this.authService = new AuthServiceImpl(authRepository, roleRepository, this.passwordEncoder, this.jwtUtil, this.authenticationManager);
     }
 
     @Override
