@@ -29,7 +29,6 @@ public class Goal{
     private String description;
 
     @Column
-    @NotBlank
     private String picture;
 
     @Column(name = "currently_saved")

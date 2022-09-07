@@ -15,7 +15,7 @@ import javax.validation.Valid;
 import java.util.Optional;
 
 @RestController
-@CrossOrigin("*")
+//@CrossOrigin("*")
 @RequestMapping("api/v1/goals")
 public class GoalController {
     private IUnitOfWork unitOfWork;

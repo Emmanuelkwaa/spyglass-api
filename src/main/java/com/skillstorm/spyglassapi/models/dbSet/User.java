@@ -5,7 +5,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
+import java.util.Set;
+
+import static javax.persistence.FetchType.EAGER;
 
 @Entity
 @Data
@@ -28,9 +32,23 @@ public class User {
 
     @Column
     @NotBlank
+    @Email
     private String email;
 
     @Column
     @NotBlank
     private String password;
+
+    @Column
+    @NotBlank
+    @ManyToMany(fetch = EAGER)
+    @JoinTable(name = "user_role",
+        joinColumns = {
+            @JoinColumn(name = "user_id")
+        },
+        inverseJoinColumns = {
+            @JoinColumn(name = "role_id")
+        }
+    )
+    private Set<Role> roles;
 }
