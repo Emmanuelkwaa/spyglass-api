@@ -1,5 +1,6 @@
 package com.skillstorm.spyglassapi.models.dbSet;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

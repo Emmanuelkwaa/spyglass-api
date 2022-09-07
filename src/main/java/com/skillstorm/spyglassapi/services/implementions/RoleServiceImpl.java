@@ -23,6 +23,6 @@ public class RoleServiceImpl extends GenericRepositoryImpl<Role, Long> implement
 
     @Override
     public Optional<Role> findByName(String name) {
-        return roleRepository.findGoalByName(name);
+        return roleRepository.findRoleByName(name);
     }
 }

@@ -4,5 +4,5 @@ import com.skillstorm.spyglassapi.models.dbSet.Role;
 import java.util.Optional;
 
 public interface RoleRepository extends GenericRepository<Role,Long>{
-    Optional<Role> findGoalByName(String name);
+    Optional<Role> findRoleByName(String name);
 }
