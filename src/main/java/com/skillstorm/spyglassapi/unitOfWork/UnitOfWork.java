@@ -22,7 +22,6 @@ public class UnitOfWork implements IUnitOfWork{
     private final AuthService authService;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
-    private final AuthenticationManager authenticationManager;
 
     @Autowired
     public UnitOfWork(
@@ -30,15 +29,16 @@ public class UnitOfWork implements IUnitOfWork{
         RoleRepository roleRepository,
         AuthRepository authRepository,
         PasswordEncoder passwordEncoder,
-        JwtUtil jwtUtil,
-        AuthenticationManager authenticationManager
+        JwtUtil jwtUtil
     ) {
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.goalService = new GoalServiceImpl(goalRepository);
         this.roleService = new RoleServiceImpl(roleRepository);
-        this.authenticationManager = authenticationManager;
-        this.authService = new AuthServiceImpl(authRepository, roleRepository, this.passwordEncoder, this.jwtUtil, this.authenticationManager);
+        this.authService = new AuthServiceImpl(authRepository,
+                roleRepository,
+                this.passwordEncoder,
+                this.jwtUtil);
     }
 
     @Override

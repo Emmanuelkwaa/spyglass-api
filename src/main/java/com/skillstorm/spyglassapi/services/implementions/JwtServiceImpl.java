@@ -2,21 +2,17 @@ package com.skillstorm.spyglassapi.services.implementions;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.skillstorm.spyglassapi.STATIC_DETAILS.SD;
-import com.skillstorm.spyglassapi.authenticationAndSecurityConfigurations.filter.JwtAuthenticationFilter;
 import com.skillstorm.spyglassapi.authenticationAndSecurityConfigurations.util.JwtUtil;
+import com.skillstorm.spyglassapi.data.repositories.AuthRepository;
 import com.skillstorm.spyglassapi.data.repositories.GenericRepositoryImpl;
 import com.skillstorm.spyglassapi.data.repositories.RoleRepository;
-import com.skillstorm.spyglassapi.data.repositories.AuthRepository;
-import com.skillstorm.spyglassapi.models.dbSet.Role;
 import com.skillstorm.spyglassapi.models.dbSet.User;
 import com.skillstorm.spyglassapi.models.dtos.errors.Error;
 import com.skillstorm.spyglassapi.models.dtos.incoming.LoginRequestDto;
-import com.skillstorm.spyglassapi.models.dtos.incoming.UserRequestDto;
 import com.skillstorm.spyglassapi.models.dtos.outgoing.AuthResult;
 import com.skillstorm.spyglassapi.models.dtos.outgoing.UserResponseDto;
 import com.skillstorm.spyglassapi.models.generic.TokenData;
-import com.skillstorm.spyglassapi.services.interfaces.AuthService;
+import com.skillstorm.spyglassapi.services.interfaces.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,7 +23,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -36,53 +31,40 @@ import java.util.Set;
 
 @Service
 @Transactional
-public class AuthServiceImpl extends GenericRepositoryImpl<User, Long> implements AuthService {
-    private final AuthRepository authRepository;
-    private final RoleRepository roleRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtUtil jwtUtil;
+public class JwtServiceImpl extends GenericRepositoryImpl<User, Long> implements JwtService, UserDetailsService {
+    private AuthRepository authRepository;
+    @Autowired
+    private JwtUtil jwtUtil;
+//    @Autowired
+//    private AuthenticationManager authenticationManager;
 
-    public AuthServiceImpl(
-            AuthRepository authRepository,
-            RoleRepository roleRepository,
-            PasswordEncoder passwordEncoder,
-            JwtUtil jwtUtil
+    public JwtServiceImpl(
+            AuthRepository authRepository
     ) {
         super(authRepository);
         this.authRepository = authRepository;
-        this.roleRepository = roleRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtUtil = jwtUtil;
     }
 
-    @Override
-    public User findByEmail(String email) {
-        return authRepository.findUserByEmail(email);
-    }
-
-    @Override
-    public AuthResult saveUser(UserRequestDto userRequestDto) {
+    public AuthResult authenticate(LoginRequestDto loginRequestDto) throws Exception {
         ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        User user = mapper.convertValue(userRequestDto, User.class);
         AuthResult authResult = new AuthResult();
 
-        User existingUser = authRepository.findUserByEmail(user.getEmail());
-        if (existingUser != null) {
-            authResult.setError(new Error(400, HttpStatus.BAD_REQUEST, "Bad Request"));
+        User existingUser = authRepository.findUserByEmail(loginRequestDto.getEmail());
+        if (existingUser == null) {
+            authResult.setError(new Error(400, HttpStatus.BAD_REQUEST, "Invalid login request!"));
             authResult.setSuccess(false);
             return authResult;
         }
 
-        Role role = roleRepository.findRoleByName(SD.Role_User).get();
-        Set<Role> userRoles = new HashSet<>();
-        userRoles.add(role);
-        user.setRoles(userRoles);
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        User newUser = authRepository.save(user);
+        String email = loginRequestDto.getEmail();
+        String password = loginRequestDto.getPassword();
 
-        //create jwt token
-        TokenData tokens = getTokens(newUser);
-        UserResponseDto userResponseDto = mapper.convertValue(newUser, UserResponseDto.class);
+        //authenticate login info
+        authenticator(email, password);
+        UserDetails userDetails = loadUserByUsername(email);
+        TokenData tokens = getTokens(existingUser);
+
+        UserResponseDto userResponseDto = mapper.convertValue(existingUser, UserResponseDto.class);
 
         authResult.setUser(userResponseDto);
         authResult.setTokenData(tokens);
@@ -90,15 +72,30 @@ public class AuthServiceImpl extends GenericRepositoryImpl<User, Long> implement
         return authResult;
     }
 
-    private TokenData getTokens(User user) {
-        org.springframework.security.core.userdetails.User
-                springUser = new org.springframework.security.core.userdetails.User(
-                user.getEmail(),
-                user.getPassword(),
-                getAuthority(user)
-        );
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        User user = authRepository.findUserByEmail(email);
 
-        //UserDetails springUser = loadUserByUsername(user.getEmail());
+        if (user != null) {
+            return new org.springframework.security.core.userdetails.User(
+                    user.getEmail(),
+                    user.getPassword(),
+                    getAuthority(user)
+            );
+        } else {
+            throw new UsernameNotFoundException("User not found with username");
+        }
+    }
+
+    private TokenData getTokens(User user) {
+//        org.springframework.security.core.userdetails.User
+//                springUser = new org.springframework.security.core.userdetails.User(
+//                user.getEmail(),
+//                user.getPassword(),
+//                getAuthority(user)
+//        );
+
+        UserDetails springUser = loadUserByUsername(user.getEmail());
         TokenData tokens = new TokenData();
         tokens.setJwtToken(jwtUtil.generateToken(springUser, 5));
         tokens.setRefreshToken(jwtUtil.generateToken(springUser, 30));
@@ -112,5 +109,15 @@ public class AuthServiceImpl extends GenericRepositoryImpl<User, Long> implement
             authorities.add(new SimpleGrantedAuthority(role.getName()));
         });
         return authorities;
+    }
+
+    private void authenticator(String userName, String userPassword) throws Exception {
+//        try {
+//            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userName, userPassword));
+//        } catch (DisabledException e) {
+//            throw new Exception("USER_DISABLED", e);
+//        } catch (BadCredentialsException e) {
+//            throw new Exception("INVALID_CREDENTIALS", e);
+//        }
     }
 }

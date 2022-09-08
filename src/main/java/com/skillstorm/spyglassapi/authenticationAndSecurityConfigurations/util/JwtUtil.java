@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
@@ -18,7 +19,7 @@ public class JwtUtil {
     @Autowired
     private Environment environment;
 
-    public String generateToken(User user, int minutes) {
+    public String generateToken(UserDetails user, int minutes) {
         String secret = environment.getProperty("jwt.secret");
         Algorithm algorithm = Algorithm.HMAC256(secret.getBytes());
         String token = JWT.create()
