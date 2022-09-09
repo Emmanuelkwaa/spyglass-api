@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skillstorm.spyglassapi.models.dbSet.Goal;
 import com.skillstorm.spyglassapi.models.dtos.errors.Error;
 import com.skillstorm.spyglassapi.models.dtos.incoming.GoalRequestDto;
+import com.skillstorm.spyglassapi.models.dtos.incoming.GoalUpdateDto;
 import com.skillstorm.spyglassapi.models.generic.Result;
 import com.skillstorm.spyglassapi.unitOfWork.IUnitOfWork;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -23,6 +26,21 @@ public class GoalController {
     @Autowired
     public GoalController(IUnitOfWork unitOfWork) {
         this.unitOfWork = unitOfWork;
+    }
+
+    @GetMapping
+    ResponseEntity<Result<Goal>> getAllGoals(){
+        List<Goal> goals = unitOfWork.goal().findAll();
+        Result result = new Result<Goal>();
+
+
+        if (!goals.isEmpty()) {
+            result.setContent(goals);
+            return new ResponseEntity<>(result, HttpStatus.OK);
+        }
+
+        result.error = new Error(404, HttpStatus.NOT_FOUND, "Goals not found");
+        return new ResponseEntity<>(result, HttpStatus.NOT_FOUND);
     }
 
     @GetMapping("/{id}")
@@ -72,15 +90,25 @@ public class GoalController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Result<Goal>> updateGoal(@PathVariable long id, @Valid @RequestBody GoalRequestDto goalRequestDto) {
-        ObjectMapper mapper = new ObjectMapper();
-        Goal goal = mapper.convertValue(goalRequestDto, Goal.class);
+    public ResponseEntity<Result<Goal>> updateGoal(@PathVariable long id, @Valid @RequestBody GoalUpdateDto goalUpdateDto) {
+//        ObjectMapper mapper = new ObjectMapper();
+//        Goal goal = mapper.convertValue(goalRequestDto, Goal.class);
+        Goal goal = unitOfWork.goal().findByName(goalUpdateDto.getName()).get();
+
+        goal.setName(goalUpdateDto.getName());
+        goal.setDescription(goalUpdateDto.getDescription());
+        goal.setTargetDate(goalUpdateDto.getTargetDate());
+        goal.setTargetAmount(goalUpdateDto.getTargetAmount());
+
+
         Result result = new Result<Goal>();
 
         try {
             Goal updatedGoal = unitOfWork.goal().updateById(goal, id);
             if(updatedGoal != null) {
-                result.content.add(updatedGoal);
+                List<Goal> list = new ArrayList<>();
+                list.add(updatedGoal);
+                result.setContent(list);
                 return new ResponseEntity<>(result, HttpStatus.CREATED);
             }
 

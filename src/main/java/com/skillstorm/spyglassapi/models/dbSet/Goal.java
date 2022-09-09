@@ -24,7 +24,7 @@ public class Goal{
     @NotBlank
     private String name;
 
-    @Column
+    @Column(name = "discription")
     @NotBlank
     private String description;
 

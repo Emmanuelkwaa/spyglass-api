@@ -1,5 +1,6 @@
 package com.skillstorm.spyglassapi.authenticationAndSecurityConfigurations.configuration;
 
+import com.skillstorm.spyglassapi.STATIC_DETAILS.SD;
 import com.skillstorm.spyglassapi.authenticationAndSecurityConfigurations.filter.JwtAuthenticationFilter;
 import com.skillstorm.spyglassapi.authenticationAndSecurityConfigurations.filter.JwtAuthorizationFilter;
 import com.skillstorm.spyglassapi.authenticationAndSecurityConfigurations.util.JwtUtil;
@@ -18,6 +19,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import static org.springframework.http.HttpMethod.GET;
+import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
 
 @Configuration
@@ -58,7 +61,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter{
         jwtAuthenticationFilter.setFilterProcessesUrl("/api/v1/auth/login");
 
         http.cors().and().csrf().disable()
-            .authorizeRequests().antMatchers("/api/v1/auth/login/**", "/api/v1/auth/register/**").permitAll()
+            .authorizeRequests().antMatchers("/api/v1/**", "/api/v1/auth/login/**", "/api/v1/auth/register/**").permitAll()
             .antMatchers(HttpHeaders.ALLOW).permitAll()
             .anyRequest().authenticated()
             .and()
@@ -66,6 +69,8 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter{
             .and()
             .sessionManagement().sessionCreationPolicy(STATELESS)
         ;
+//        http.authorizeRequests().antMatchers(GET, "/api/v1/**").hasAnyAuthority(SD.Role_User);
+//        http.authorizeRequests().antMatchers(POST, "/api/v1/**").hasAnyAuthority(SD.Role_User);
 
 //        http.authorizeRequests().antMatchers("/api/v1/auth/login/**", "/api/v1/auth/register/**").permitAll();
 //        http.authorizeRequests().antMatchers(GET, "/api/user/**").hasAnyAuthority(SD.Role_User);
