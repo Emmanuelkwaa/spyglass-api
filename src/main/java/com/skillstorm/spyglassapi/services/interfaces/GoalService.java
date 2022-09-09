@@ -6,4 +6,5 @@ import java.util.Optional;
 
 public interface GoalService extends GenericService<Goal, Long> {
     Optional<Goal> findByName(String name);
+    Goal createGoal(Goal goal);
 }

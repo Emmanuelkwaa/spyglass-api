@@ -68,13 +68,13 @@ public class GoalController {
     }
 
     @PostMapping
-    public ResponseEntity<Result<Goal>> createGoal(@Valid @RequestBody GoalRequestDto goalRequestDto) {
+    public ResponseEntity<Result<Goal>> createGoal( @Valid @RequestBody GoalRequestDto goalRequestDto) {
         ObjectMapper mapper = new ObjectMapper();
         Goal goal = mapper.convertValue(goalRequestDto, Goal.class);
         Result result = new Result<Goal>();
 
         try {
-            Goal createdGoal = unitOfWork.goal().save(goal);
+            Goal createdGoal = unitOfWork.goal().createGoal(goal);
             if(createdGoal != null) {
                 result.content.add(createdGoal);
                 return new ResponseEntity<>(result, HttpStatus.CREATED);
@@ -123,15 +123,9 @@ public class GoalController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Result<Goal>> deleteGoal(@PathVariable long id) {
         unitOfWork.goal().deleteById(id);
-        Optional<Goal> goal = unitOfWork.goal().findById(id);
-        boolean isDeleted = goal.isPresent();
         Result result = new Result<Goal>();
 
-        if(isDeleted) {
-            return new ResponseEntity<>(result, HttpStatus.NO_CONTENT);
-        }
-
-        result.error = new Error(400, HttpStatus.BAD_REQUEST, "Unable to delete goal");
-        return new ResponseEntity<>(result, HttpStatus.BAD_REQUEST);
+        result.setSuccess(true);
+        return new ResponseEntity<>(result, HttpStatus.NO_CONTENT);
     }
 }
